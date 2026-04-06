@@ -16,9 +16,8 @@ from datetime import datetime
 import concurrent.futures as cf
 
 start_time = datetime.now()
-n_sim = 1
+n_sim = 20
 n_trials = 100_000
-# n_trials = 2_000
 alpha = 0.1
 alpha_v = 1
 beta = 1.
@@ -254,7 +253,7 @@ exit()
 """
 
 print('Initializing learners')
-cfg=cfg4
+cfg=cfg1
 stimuli_stream = RawInputLazy(20*n_trials,cfg)
 typ = 'flexible'
 border = 'nxt'
@@ -266,11 +265,11 @@ if n_sim == 1:
     plot_one(l)
 
 else:
-    ls = [Learner(config, 10000, cfg) for i in range(0,n_sim)]
+    ls = [Learner(config, 0, cfg,clustering=False, original=False) for i in range(0,n_sim)]
     with cf.ThreadPoolExecutor() as executor:
         print("Number of worker threads:", executor._max_workers)
         results = [executor.submit(lambda:l.learn(stimuli_stream)) for l in ls]
         for future in cf.as_completed(results):
             result = future.result()
-    print('Duration: {}'.format(datetime.now() - start_time))
+    print('Duration: {}'.format((datetime.now() - start_time)/n_sim))
     plot_many(ls)

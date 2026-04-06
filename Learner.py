@@ -302,7 +302,7 @@ class LearningHistory:
 
             
 class WorkingMemory():
-    def __init__(self,learner,config: LearnerConfig,samplenum,cfg,output=False,clustering=False):
+    def __init__(self,learner,config: LearnerConfig,samplenum,cfg,output=False,clustering=False,original=True):
         self.learner = learner
         self.reinforcer = Reinforcer(learner,config)
         self.type_assigner = TypeAssigner(learner,config)
@@ -317,6 +317,7 @@ class WorkingMemory():
         self.beta = config.beta
         self.pos = config.positive_reinforcement
         self.neg = config.negative_reinforcement
+        self.original = original
 
         self.success = []
         self.output = output
@@ -340,6 +341,7 @@ class WorkingMemory():
         # get the s2 stimuli and make it a chunk
         try:
             word = Word(stimuli_stream.read_stimuli(s2_index), self.db)
+            # print(word.t, word.name)
             s2 = SChunk(word.t)
         except IndexError:
             sys.exit("Index doesn't exist. End of input reached before learning is finished.")
@@ -359,7 +361,7 @@ class WorkingMemory():
             self.learner.n_reinf += 1
             self.lens.append(len(self.ws))
 
-            self.custom_reinforce(self.is_border_correct(stimuli_stream, s2_index))
+            if not self.original: self.custom_reinforce(self.is_border_correct(stimuli_stream, s2_index))
             self.ws = [word]
             self.deps_down = dict()
             self.deps_up   = dict()
@@ -385,7 +387,7 @@ class WorkingMemory():
             self.events = []
                
         else: # some type of chunking occurs
-            self.add_dependencies(word)
+            if not self.original: self.add_dependencies(word)
             new_s1, s2_index = self.chunk(pair, response, stimuli_stream,s2_index) 
   
         return new_s1, s2_index
@@ -1549,13 +1551,13 @@ import tracemalloc
 class Learner():
     ID = 0
     
-    def __init__(self, config: LearnerConfig,samplenum,cfg,output=False,clustering=False):
+    def __init__(self, config: LearnerConfig,samplenum,cfg,output=False,clustering=False,original=False):
         self.ID = Learner.ID + 1
         Learner.ID +=1
         
         self.ltm = LongTermMemory(config)
         # print(type(self), type(config), type(samplenum), type(cfg))
-        self.wm = WorkingMemory(self,config,samplenum,cfg,output=output,clustering=clustering)
+        self.wm = WorkingMemory(self,config,samplenum,cfg,output=output,clustering=clustering,original=original)
         self.history = LearningHistory()
         self.chaining = config.chaining
         self.type_on = config.type_on
